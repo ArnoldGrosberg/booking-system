@@ -1,4 +1,3 @@
-
 const express = require('express')
 
 const cors = require('cors')
@@ -12,34 +11,14 @@ app.use(cors())        // Avoid CORS errors in browsers
 app.use(express.json()) // Populate req.body
 
 
-
 const times = [
 
-    { id: 1, day: "Monday", start: "8:00", end:"8:30", bookedBy:"" },
-    { id: 2, day: "Monday", start: "8:00", end:"8:30", bookedBy:"Testing123"  },
-    { id: 3, day: "Monday", start: "8:30", end:"9:00", bookedBy:""  },
-    { id: 4, day: "Monday", start: "9:00", end:"9:30", bookedBy:"Test2"  },
-    { id: 5, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 6, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 7, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 8, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 9, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 10, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 11, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 12, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 13, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 14, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 15, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 16, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 17, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 18, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 19, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 20, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 21, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
-    { id: 22, day: "Monday", start: "8:00", end:"8:30", bookedBy:""  },
+    {id: 1, day: "2022-02-14", start: "8:00", end: "8:30", bookedBy: ""},
+    {id: 2, day: "2022-02-15", start: "8:00", end: "8:30", bookedBy: "Testing123"},
+    {id: 3, day: "2022-02-16", start: "8:30", end: "9:00", bookedBy: ""},
+    {id: 4, day: "2022-02-17", start: "9:00", end: "9:30", bookedBy: "Test2"}
 
 ]
-
 
 
 app.get('/times', (req, res) => {
@@ -52,7 +31,7 @@ app.get('/times/available', (req, res) => {
     var timesAvailable = [];
     var i = 0;
     while (i < times.length) {
-        if (!times[i].bookedBy ) {
+        if (!times[i].bookedBy) {
             timesAvailable.push(times[i]);
         }
         i++;
@@ -63,12 +42,11 @@ app.get('/times/available', (req, res) => {
 })
 
 
-
 app.get('/times/:id', (req, res) => {
 
     if (typeof times[req.params.id - 1] === 'undefined') {
 
-        return res.status(404).send({ error: "times not found" })
+        return res.status(404).send({error: "Time not found"})
 
     }
 
@@ -76,34 +54,35 @@ app.get('/times/:id', (req, res) => {
 
 })
 
+app.patch('/times/:id', (req, res) => {
 
-
-app.post('/times', (req, res) => {
-
-    if (!req.body.id) {
-        return res.status(400).send({ error: 'One or all params are missing '})
-
+    // Check that :id is a valid number
+    if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
+        return res.status(400).send({error: 'Invalid id'})
     }
 
-    let newTime = {
-
-        id: times.length + 1,
-        day: req.body.day,
-        start: req.body.start,
-        end: req.body.start,
-        bookedBy: req.body.start
-
+    // Check that time with given id exists
+    if(!times[req.params.id - 1]) {
+        return res.status(404).send({error: 'Time not found'})
     }
 
-    times.push(newTime)
+    // Check that name is valid
+    if(!/^\w{4,}/.test(req.body.name)){
+        return res.status(400).send({error: 'Invalid name'})
+    }
 
-    res.status(201)
-        .location('localhost:${port}/times/' + (times.length - 1))
-        .send(newTime)
+    // Check that phone is valid
+    if(!/^\+?[1-9]\d{6,14}$/.test(req.body.phone)){
+        return res.status(400).send({error: 'Invalid phone'})
+    }
+
+    // Change name and phone for given id
+    times[req.params.id - 1]['bookedBy'] = req.body.name
+    times[req.params.id - 1]['phone'] = req.body.phone
+
+    res.status(200).end()
 
 })
-
-
 
 app.listen(8080, () => {
 
