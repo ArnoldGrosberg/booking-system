@@ -11,30 +11,39 @@
 </head>
 <body>
 <div id="app">
-<table id="gamesTable" class="table table-striped table-bordered">
+<table id="timesTable" class="table table-striped table-bordered">
     <tr>
-        <th>Name</th>
-        <th>Price</th>
+        <th>Day</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Booked by</th>
     </tr>
-    <tr v-for="game in games">
-        <td>{{ game.name }}</td>
-        <td>{{ game.price }}</td>
+    <tr v-for="time in times">
+        <td>{{ time.day }}</td>
+        <td>{{ time.start }}</td>
+        <td>{{ time.end }}</td>
+        <td>{{ time.bookedBy }}</td>
     </tr>
 </table>
     </div >
 <script src="https://unpkg.com/vue@3.2.31/dist/vue.global.js"></script>
 <script>
+
+
+
     const vue = Vue.createApp({
         data(){
             return {
-                games: [
-                    {id: 1, name: "Witcher 3", price: 29.99},
-                    {id: 2, name: "Cyberpunk 2077", price: 59.99},
-                    {id: 3, name: "Minecraft", price: 0},
-                ]
+                times: []
             }
+        },
+        async created(){
+            this.times = await (await fetch('http://localhost:8080/times')).json();
         }
     }).mount('#app')
+
+
+
 </script>
 
 </body>
