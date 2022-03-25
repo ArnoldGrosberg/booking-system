@@ -12,6 +12,14 @@ const times = [
     {id: 3, day: "2022-02-16", start: "8:30", end: "9:00", bookedBy: ""},
     {id: 4, day: "2022-02-17", start: "9:00", end: "9:30", bookedBy: "Test2"}
 ]
+const users = [
+    {id: 1, username: "Admin", password: "Password", isAdmin: true},
+    {id: 2, username: "User", password: "Password", isAdmin: false}
+]
+
+let sessions = [
+    {id: 1, userId: 1}
+]
 
 app.get('/times', (req, res) => {
     res.send(times)
@@ -62,6 +70,50 @@ app.patch('/times/:id', (req, res) => {
     times[req.params.id - 1]['bookedBy'] = req.body.name
     times[req.params.id - 1]['phone'] = req.body.phone
 
+    res.status(200).end()
+})
+app.post('/users', (req, res) => {
+    if (!req.body.username || !req.body.password) {
+        return res.status(400).send({ error: 'One or all params are missing' })
+    }
+
+    let user = users.find( ( user )=> user.username === req.body.username);
+    if (user) {
+        return res.status(409).send({ error: 'Conflict: The user already exists. ' })
+    }
+
+    users.push({id: users.length + 1, username: req.body.username, password: req.body.password, isAdmin: false})
+
+    user = users.find( ( user )=> user.username === req.body.username && user.password === req.body.password);
+    if (!user) {
+        return res.status(507).send({ error: 'Insufficient Storage: The server is unable to store the representation needed to complete the request.' })
+    }
+    let newSession = {
+        id: sessions.length + 1,
+        userId: user.id
+    }
+    sessions.push(newSession)
+    res.status(201).send({sessionId: sessions.length})
+})
+app.post('/sessions', (req, res) => {
+    if (!req.body.username || !req.body.password) {
+        return res.status(400).send({ error: 'One or all params are missing' })
+    }
+    const user = users.find( ( user )=> user.username === req.body.username && user.password === req.body.password);
+    if (!user) {
+        return res.status(401).send({ error: 'Unauthorized: username or password is incorrect' })
+    }
+    let newSession = {
+        id: sessions.length + 1,
+        userId: user.id
+    }
+    sessions.push(newSession)
+    res.status(201).send(
+        {sessionId: sessions.length}
+    )
+})
+app.post('/sessions/logout', (req, res) => {
+    sessions = sessions.filter( ( session ) => session.id === req.body.sessionId );
     res.status(200).end()
 })
 
