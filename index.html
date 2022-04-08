@@ -126,6 +126,14 @@
         }
         return '';
     }
+    Array.prototype.findBy = function (field, value) {
+        return this.find(function (x) {
+            return x[field] === value;
+        })
+    }
+    Array.prototype.findById = function (value) {
+        return this.findBy('id', parseInt(value))
+    }
     const vue = Vue.createApp({
         data() {
             return {
@@ -173,6 +181,13 @@
             showAddEditModal: function (id) {
                 this.activeTimeID = id;
                 this.modalMode = id ? this.edit : this.add;
+                let clientTime = this.times.findById(id);
+                this.name = clientTime.name;
+                this.day = clientTime.day;
+                this.start = clientTime.start;
+                this.end = clientTime.end;
+                this.phone = clientTime.phone;
+                this.getTime();
                 this.modalHandler = new bootstrap.Modal(document.getElementById('addEditModal'), {})
                 this.modalHandler.show()
             }
@@ -199,6 +214,17 @@
                     alert("The booking was a success!");
                 }
 
+            }
+            ,
+            getTime: async function () {
+                let response = await this.send('GET', `http://localhost:8080/times/${this.activeTimeID}`);
+                if (response.body) {
+                    this.name = response.body.name;
+                    this.day = response.body.day;
+                    this.start = response.body.start;
+                    this.end = response.body.end;
+                    this.phone = response.body.phone;
+                }
             }
             ,
             logIn: async function () {

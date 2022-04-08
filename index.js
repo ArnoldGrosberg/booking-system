@@ -83,7 +83,7 @@ app.patch('/times/edit/:id', requireAdmin, (req, res) => {
     // Change name, day, start, end and phone for given id if provided
     if (req.body.name) {
         // Check that name is valid
-        if (!/^\w{4,}/.test(req.body.name)) {
+        if (!/^\w{2,}/.test(req.body.name)) {
             return res.status(400).send({error: 'Invalid name'})
         }
         time.bookedBy = req.body.name
@@ -190,8 +190,8 @@ app.delete('/times/:id', requireAdmin, (req, res) => {
 })
 
 app.get('/times/available', (req, res) => {
-    var timesAvailable = [];
-    var i = 0;
+    let timesAvailable = [];
+    let i = 0;
     while (i < times.length) {
         if (!times[i].bookedBy) {
             timesAvailable.push(times[i]);
