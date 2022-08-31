@@ -2,9 +2,16 @@ const express = require('express')
 const cors = require('cors')
 const app = express()
 const port = 8080
-
+var expressWs = require('express-ws')(app);
 app.use(cors())        // Avoid CORS errors in browsers
 app.use(express.json()) // Populate req.body
+
+app.ws('/', function(ws, req) {
+    ws.on('message', function(msg) {
+      expressWs.getWss().clients.forEach(client => client.send(msg));
+    });
+    console.log('socket', req.testing);
+  });
 
 let times = [
     {id: 1, day: "2022-02-14", start: "8:00", end: "8:30", bookedBy: ""},
@@ -234,7 +241,7 @@ app.patch('/times/:id', (req, res) => {
     // Change name and phone for given id
     time.bookedBy = req.body.name
     time.phone = req.body.phone
-
+    expressWs.getWss().clients.forEach(client => client.send(time.id));
     res.status(200).end()
 })
 app.post('/users', (req, res) => {
