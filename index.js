@@ -124,6 +124,7 @@ app.patch('/times/edit/:id', requireAdmin, (req, res) => {
         }
         time.phone = req.body.phone
     }
+    expressWs.getWss().clients.forEach(client => client.send(JSON.stringify(time)));
     res.status(200).send(time)
 })
 
