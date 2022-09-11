@@ -179,7 +179,8 @@ app.post('/times', requireAdmin, (req, res) => {
     const maxTimeId = Math.max(...ids);
     newTime['id'] = maxTimeId + 1
     times.push(newTime)
-    res.status(200).send(newTime)
+    expressWs.getWss().clients.forEach(client => client.send(JSON.stringify(newTime)));
+    res.status(200).end()
 })
 
 

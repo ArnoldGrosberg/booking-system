@@ -181,13 +181,13 @@
             showAddEditModal: function (id) {
                 this.activeTimeID = id;
                 this.modalMode = id ? this.edit : this.add;
-                let clientTime = this.times.findById(id);
+                if (this.modalMode == this.edit) {let clientTime = this.times.findById(id);
                 this.name = clientTime.name;
                 this.day = clientTime.day;
                 this.start = clientTime.start;
                 this.end = clientTime.end;
                 this.phone = clientTime.phone;
-                this.getTime();
+                this.getTime();}
                 this.modalHandler = new bootstrap.Modal(document.getElementById('addEditModal'), {})
                 this.modalHandler.show()
             }
@@ -304,8 +304,6 @@
                 });
                 if (response.ok) {
                     this.modalHandler.hide();
-                    this.times.push(response.body)
-                    this.sortTimes()
                     alert("The item got added!");
                 }
             }
