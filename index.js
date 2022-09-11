@@ -193,6 +193,7 @@ app.delete('/times/:id', requireAdmin, (req, res) => {
         return res.status(404).send({error: 'Time not found'})
     }
     times = times.filter((time) => time.id !== parseInt(req.params.id));
+    expressWs.getWss().clients.forEach(client => client.send(parseInt(req.params.id)));
     res.status(200).end()
 })
 
