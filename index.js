@@ -10,7 +10,6 @@ app.ws('/', function(ws, req) {
     ws.on('message', function(msg) {
       expressWs.getWss().clients.forEach(client => client.send(msg));
     });
-    console.log('socket', req.testing);
   });
 
 let times = [
@@ -72,6 +71,7 @@ Array.prototype.findBy = function (field, value) {
     })
 }
 
+const delay = ms => new Promise(res => setTimeout(res, ms));
 app.get('/times', (req, res) => {
     res.send(times)
 })
@@ -199,7 +199,10 @@ app.delete('/times/:id', requireAdmin, (req, res) => {
     res.status(200).end()
 })
 
-app.get('/times/available', (req, res) => {
+app.get('/times/available', async (req, res) => {
+    // 1 second delay before responding to test front end caching
+    await delay(1000);
+
     let timesAvailable = [];
     let i = 0;
     while (i < times.length) {

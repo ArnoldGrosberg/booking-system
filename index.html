@@ -134,6 +134,7 @@
     Array.prototype.findById = function (value) {
         return this.findBy('id', parseInt(value))
     }
+
     const vue = Vue.createApp({
         data() {
             return {
@@ -155,7 +156,16 @@
             }
         },
         async created() {
-            let response = await this.send('GET', 'http://localhost:8080/times/available');
+            this.times = JSON.parse(localStorage.getItem("times"));
+            console.table(this.times);
+            let response;
+            try{
+                response = await this.send('GET', 'http://localhost:8080/times/available');
+            } catch(e){
+                alert("Network error")
+            }
+            
+            localStorage.setItem("times", JSON.stringify(response.body));
             this.times = response.body;
             this.sessionId = localStorage.getItem("sessionId");
         },
