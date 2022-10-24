@@ -160,7 +160,7 @@
             console.table(this.times);
             let response;
             try{
-                response = await this.send('GET', 'http://localhost:8080/times/available');
+                response = await this.send('GET', 'https://localhost:8080/times/available');
             } catch(e){
                 alert("Network error")
             }
@@ -214,7 +214,7 @@
             }
             ,
             book: async function () {
-                let response = await this.send('PATCH', `http://localhost:8080/times/${this.activeTimeID}`, {
+                let response = await this.send('PATCH', `https://localhost:8080/times/${this.activeTimeID}`, {
                     name: this.name,
                     phone: this.phone
                 });
@@ -227,7 +227,7 @@
             }
             ,
             getTime: async function () {
-                let response = await this.send('GET', `http://localhost:8080/times/${this.activeTimeID}`);
+                let response = await this.send('GET', `https://localhost:8080/times/${this.activeTimeID}`);
                 if (response.body) {
                     this.name = response.body.name;
                     this.day = response.body.day;
@@ -238,7 +238,7 @@
             }
             ,
             logIn: async function () {
-                let response = await this.send('POST', `http://localhost:8080/sessions`, {
+                let response = await this.send('POST', `https://localhost:8080/sessions`, {
                     username: this.username,
                     password: this.password
                 });
@@ -250,7 +250,7 @@
             }
             ,
             register: async function () {
-                let response = await this.send('POST', `http://localhost:8080/users`, {
+                let response = await this.send('POST', `https://localhost:8080/users`, {
                     username: this.username,
                     password: this.password
                 });
@@ -263,7 +263,7 @@
             }
             ,
             logout: async function () {
-                let response = await this.send('DELETE', `http://localhost:8080/sessions`, {
+                let response = await this.send('DELETE', `https://localhost:8080/sessions`, {
                     sessionId: this.sessionId
                 });
                 if (response.ok) {
@@ -274,7 +274,7 @@
             }
             ,
             confirmEdit: async function () {
-                let response = await this.send('PATCH', `http://localhost:8080/times/edit/${this.activeTimeID}`, {
+                let response = await this.send('PATCH', `https://localhost:8080/times/edit/${this.activeTimeID}`, {
                     sessionId: parseInt(this.sessionId),
                     name: this.name,
                     day: this.day,
@@ -293,7 +293,7 @@
             ,
             deleteTime: async function (id) {
                 this.activeTimeID = id;
-                let response = await this.send('DELETE', `http://localhost:8080/times/${this.activeTimeID}`, {
+                let response = await this.send('DELETE', `https://localhost:8080/times/${this.activeTimeID}`, {
                     sessionId: this.sessionId
                 });
                 if (response.ok) {
@@ -304,7 +304,7 @@
             }
             ,
             confirmAdd: async function () {
-                let response = await this.send('POST', `http://localhost:8080/times`, {
+                let response = await this.send('POST', `https://localhost:8080/times`, {
                     sessionId: parseInt(this.sessionId),
                     name: this.name,
                     day: this.day,
@@ -351,7 +351,7 @@
             }
         },
     }).mount('#app')
-    const connection = new WebSocket("ws://localhost:8080/")
+    const connection = new WebSocket("wss://localhost:8080/")
         connection.onmessage = function(event){
             if (!(isNaN(parseInt(event.data)))) {vue.removeTime(parseInt(event.data))}
             else {

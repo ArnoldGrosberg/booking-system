@@ -13,10 +13,12 @@
     "cors": "^2.8.5",
     "express": "^4.18.1",
     "express-ws": "^5.0.2",
+    "fs": "^0.0.1-security",
+    "https": "^1.0.0",
     "nodemon": "^2.0.19",
     "query-string": "^7.1.1",
     "vue": "^3.2.38",
     "websocket": "^1.0.34",
-    "ws": "^8.8.1"
+    "ws": "^8.9.0"
   }
 }
