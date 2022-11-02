@@ -135,94 +135,96 @@
         return this.findBy('id', parseInt(value))
     }
 
-    const vue = Vue.createApp({
-        data() {
-            return {
-                modalHandler: null,
-                timeInModal: null,
-                times: [],
-                activeTimeID: 0,
-                name: null,
-                phone: null,
-                username: null,
-                password: null,
-                day: null,
-                start: null,
-                end: null,
-                sessionId: null,
-                modalMode: null,
-                add: 1,
-                edit: 2
-            }
-        },
-        async created() {
-            this.times = JSON.parse(localStorage.getItem("times"));
-            console.table(this.times);
-            let response;
-            try{
-                response = await this.send('GET', 'https://localhost:8080/times/available');
-            } catch(e){
-                alert("Network error")
-            }
-            
-            localStorage.setItem("times", JSON.stringify(response.body));
-            this.times = response.body;
-            this.sessionId = localStorage.getItem("sessionId");
-        },
-        methods: {
-            sortTimes: function () {
-                this.times.sort(function (a, b) {
-                    if (a.day < b.day) {
-                        return -1;
-                    }
-                    if (a.day > b.day) {
-                        return 1;
-                    }
-                    return 0;
-                })
-            }
-            ,
-            showTimeDetailsModal: function (id) {
-                this.activeTimeID = id;
-                this.modalHandler = new bootstrap.Modal(document.getElementById('timeDetailsModal'), {})
-                this.modalHandler.show()
-            }
-            ,
-            showAddEditModal: function (id) {
-                this.activeTimeID = id;
-                this.modalMode = id ? this.edit : this.add;
-                if (this.modalMode == this.edit) {let clientTime = this.times.findById(id);
-                this.name = clientTime.name;
-                this.day = clientTime.day;
-                this.start = clientTime.start;
-                this.end = clientTime.end;
-                this.phone = clientTime.phone;
-                this.getTime();}
-                this.modalHandler = new bootstrap.Modal(document.getElementById('addEditModal'), {})
-                this.modalHandler.show()
-            }
-            ,
-            showLoginModal: function () {
-                this.modalHandler = new bootstrap.Modal(document.getElementById('loginModal'), {})
-                this.modalHandler.show()
-            }
-            ,
-            removeTime: function (id) {
-                this.times = this.times.filter(x => {
-                    return x.id !== id;
-                })
-            }
-            ,
-            book: async function () {
-                let response = await this.send('PATCH', `https://localhost:8080/times/${this.activeTimeID}`, {
-                    name: this.name,
-                    phone: this.phone
-                });
-                if (response.ok) {
-                    this.modalHandler.hide()
-                    this.removeTime(this.activeTimeID);
-                    alert("The booking was a success!");
+        const vue = Vue.createApp({
+            data() {
+                return {
+                    modalHandler: null,
+                    timeInModal: null,
+                    times: [],
+                    activeTimeID: 0,
+                    name: null,
+                    phone: null,
+                    username: null,
+                    password: null,
+                    day: null,
+                    start: null,
+                    end: null,
+                    sessionId: null,
+                    modalMode: null,
+                    add: 1,
+                    edit: 2
                 }
+            },
+            async created() {
+                this.times = JSON.parse(localStorage.getItem("times"));
+                console.table(this.times);
+                let response;
+                try {
+                    response = await this.send('GET', 'https://localhost:8080/times/available');
+                } catch (e) {
+                    alert("Network error")
+                }
+
+                localStorage.setItem("times", JSON.stringify(response.body));
+                this.times = response.body;
+                this.sessionId = localStorage.getItem("sessionId");
+            },
+            methods: {
+                sortTimes: function () {
+                    this.times.sort(function (a, b) {
+                        if (a.day < b.day) {
+                            return -1;
+                        }
+                        if (a.day > b.day) {
+                            return 1;
+                        }
+                        return 0;
+                    })
+                }
+                ,
+                showTimeDetailsModal: function (id) {
+                    this.activeTimeID = id;
+                    this.modalHandler = new bootstrap.Modal(document.getElementById('timeDetailsModal'), {})
+                    this.modalHandler.show()
+                }
+                ,
+                showAddEditModal: function (id) {
+                    this.activeTimeID = id;
+                    this.modalMode = id ? this.edit : this.add;
+                    if (this.modalMode == this.edit) {
+                        let clientTime = this.times.findById(id);
+                        this.name = clientTime.name;
+                        this.day = clientTime.day;
+                        this.start = clientTime.start;
+                        this.end = clientTime.end;
+                        this.phone = clientTime.phone;
+                        this.getTime();
+                    }
+                    this.modalHandler = new bootstrap.Modal(document.getElementById('addEditModal'), {})
+                    this.modalHandler.show()
+                }
+                ,
+                showLoginModal: function () {
+                    this.modalHandler = new bootstrap.Modal(document.getElementById('loginModal'), {})
+                    this.modalHandler.show()
+                }
+                ,
+                removeTime: function (id) {
+                    this.times = this.times.filter(x => {
+                        return x.id !== id;
+                    })
+                }
+                ,
+                book: async function () {
+                    let response = await this.send('PATCH', `https://localhost:8080/times/patient/${this.activeTimeID}`, {
+                        name: this.name,
+                        phone: this.phone
+                    });
+                    if (response.ok) {
+                        this.modalHandler.hide()
+                        this.removeTime(this.activeTimeID);
+                        alert("The booking was a success!");
+                    }
 
                 }
                 ,
@@ -274,7 +276,7 @@
                 }
                 ,
                 confirmEdit: async function () {
-                    let response = await this.send('PATCH', `https://localhost:8080/times/edit/${this.activeTimeID}`, {
+                    let response = await this.send('PATCH', `https://localhost:8080/times/${this.activeTimeID}`, {
                         sessionId: parseInt(this.sessionId),
                         name: this.name,
                         day: this.day,

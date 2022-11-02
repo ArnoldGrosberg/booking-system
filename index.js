@@ -107,7 +107,9 @@ app.get('/times', (req, res) => {
     res.send(times)
 })
 
-app.patch('/times/edit/:id', requireAdmin, (req, res) => {
+})
+app.patch('/times/:id', requireAdmin, (req, res) => {
+
     // Check that :id is a valid number
     if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
         return res.status(400).send({ error: 'Invalid id' })
@@ -253,7 +255,7 @@ app.get('/times/:id', (req, res) => {
     res.send(time)
 })
 
-app.patch('/times/:id', (req, res) => {
+app.patch('/times/patient/:id', (req, res) => {
 
     // Check that :id is a valid number
     if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
