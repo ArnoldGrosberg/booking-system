@@ -51,22 +51,36 @@ function isValidFutureDate(req) {
 }
 
 function requireAdmin(req, res, next) {
-    // Check that the sessionId is present
-    if (!req.body.sessionId) {
-        return res.status(400).send({ error: 'You have to login' })
+
+    // Check Authorization header is provided
+    let authorizationHeader = req.header('Authorization')
+    if (!authorizationHeader) {
+        return res.status(401).send({ error: 'You have to login' })
     }
 
-    // Check that the sessionId is valid
-    const sessionUser = sessions.find((session) => session.id === parseInt(req.body.sessionId));
-    if (!sessionUser) {
-        return res.status(401).send({ error: 'Invalid sessionId' })
+    // Split Authorization header into an array (by spaces)
+    authorizationHeader = authorizationHeader.split(' ')
+
+    // Check Authorization header for token
+    if (!authorizationHeader[1]) {
+        return res.status(400).json({ error: 'Invalid Authorization header format' })
     }
+    // Validate token is in mongo ObjectId format to prevent UnhandledPromiseRejectionWarnings
+    if (!parseInt(authorizationHeader[1])) {
+        return res.status(401).send({ error: 'You have to login' })
+    }
+
+    const sessionUser = sessions.find((session) => session.id === parseInt(authorizationHeader[1]));
+    if (!sessionUser) return res.status(401).json({ error: 'Invalid token' });
 
     // Check that the sessionId in the sessions has user in it
     const user = users.findById(sessionUser.userId);
     if (!user) {
         return res.status(400).send({ error: 'SessionId does not have an user associated with it' })
     }
+
+    // Write user's id into req
+    req.userId = sessionUser.userId
 
     // Check that the user is an admin
     if (!user.isAdmin) {

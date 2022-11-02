@@ -224,136 +224,139 @@
                     alert("The booking was a success!");
                 }
 
-            }
-            ,
-            getTime: async function () {
-                let response = await this.send('GET', `https://localhost:8080/times/${this.activeTimeID}`);
-                if (response.body) {
-                    this.name = response.body.name;
-                    this.day = response.body.day;
-                    this.start = response.body.start;
-                    this.end = response.body.end;
-                    this.phone = response.body.phone;
                 }
-            }
-            ,
-            logIn: async function () {
-                let response = await this.send('POST', `https://localhost:8080/sessions`, {
-                    username: this.username,
-                    password: this.password
-                });
-                if (response.ok) {
-                    this.sessionId = response.body.sessionId;
-                    localStorage.setItem("sessionId", this.sessionId);
-                    this.modalHandler.hide()
-                }
-            }
-            ,
-            register: async function () {
-                let response = await this.send('POST', `https://localhost:8080/users`, {
-                    username: this.username,
-                    password: this.password
-                });
-                if (response.ok) {
-                    this.sessionId = response.body.sessionId;
-                    localStorage.setItem("sessionId", this.sessionId);
-                    this.modalHandler.hide()
-                    alert("The registration was a success!");
-                }
-            }
-            ,
-            logout: async function () {
-                let response = await this.send('DELETE', `https://localhost:8080/sessions`, {
-                    sessionId: this.sessionId
-                });
-                if (response.ok) {
-                    this.sessionId = null;
-                    localStorage.clear();
-                    this.modalHandler.hide();
-                }
-            }
-            ,
-            confirmEdit: async function () {
-                let response = await this.send('PATCH', `https://localhost:8080/times/edit/${this.activeTimeID}`, {
-                    sessionId: parseInt(this.sessionId),
-                    name: this.name,
-                    day: this.day,
-                    start: this.start,
-                    end: this.end,
-                    phone: this.phone
-                });
-                if (response.ok) {
-                    this.modalHandler.hide();
-                    this.removeTime(this.activeTimeID);
-                    this.times.push(response.body);
-                    this.sortTimes()
-                    alert("The item change was a success!");
-                }
-            }
-            ,
-            deleteTime: async function (id) {
-                this.activeTimeID = id;
-                let response = await this.send('DELETE', `https://localhost:8080/times/${this.activeTimeID}`, {
-                    sessionId: this.sessionId
-                });
-                if (response.ok) {
-                    this.modalHandler.hide();
-                    this.removeTime(id)
-                    alert("The item deletion was a success!");
-                }
-            }
-            ,
-            confirmAdd: async function () {
-                let response = await this.send('POST', `https://localhost:8080/times`, {
-                    sessionId: parseInt(this.sessionId),
-                    name: this.name,
-                    day: this.day,
-                    start: this.start,
-                    end: this.end,
-                    phone: this.phone
-                });
-                if (response.ok) {
-                    this.modalHandler.hide();
-                    alert("The item got added!");
-                }
-            }
-            ,
-            send: function (method, url, body) {
-                async function CheckError(response) {
-                    if (response.status >= 200 && response.status <= 299) {
-                        let responseText = await response.text()
-                        return {ok: true, status: response.status, body: tryToParseJSON(responseText)}
-                    } else {
-                        let responseText = await response.text()
-                        let responseObject = tryToParseJSON(responseText)
-                        if (typeof responseObject === 'object' && typeof responseObject.error === 'string') {
-                            alert('Error code ' + response.status + ":\n" + responseObject.error)
-                        } else {
-                            alert('Error code ' + response.status + ":\n" + responseText)
-                        }
-                        return {ok: false, status: response.status, body: responseObject || responseText}
+                ,
+                getTime: async function () {
+                    let response = await this.send('GET', `https://localhost:8080/times/${this.activeTimeID}`);
+                    if (response.body) {
+                        this.name = response.body.name;
+                        this.day = response.body.day;
+                        this.start = response.body.start;
+                        this.end = response.body.end;
+                        this.phone = response.body.phone;
                     }
                 }
-
-                return fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
-                })
-                    .then(CheckError)
-                    .then((jsonResponse) => {
-                        return jsonResponse
-                    }).catch((error) => {
-                        throw Error('Network error: ' + error);
+                ,
+                logIn: async function () {
+                    let response = await this.send('POST', `https://localhost:8080/sessions`, {
+                        username: this.username,
+                        password: this.password
                     });
-            }
-        },
-    }).mount('#app')
-    const connection = new WebSocket("wss://localhost:8080/")
-        connection.onmessage = function(event){
-            if (!(isNaN(parseInt(event.data)))) {vue.removeTime(parseInt(event.data))}
+                    if (response.ok) {
+                        this.sessionId = response.body.sessionId;
+                        localStorage.setItem("sessionId", this.sessionId);
+                        this.modalHandler.hide()
+                    }
+                }
+                ,
+                register: async function () {
+                    let response = await this.send('POST', `https://localhost:8080/users`, {
+                        username: this.username,
+                        password: this.password
+                    });
+                    if (response.ok) {
+                        this.sessionId = response.body.sessionId;
+                        localStorage.setItem("sessionId", this.sessionId);
+                        this.modalHandler.hide()
+                        alert("The registration was a success!");
+                    }
+                }
+                ,
+                logout: async function () {
+                    let response = await this.send('DELETE', `https://localhost:8080/sessions`, {
+                        sessionId: this.sessionId
+                    });
+                    if (response.ok) {
+                        this.sessionId = null;
+                        localStorage.clear();
+                        this.modalHandler.hide();
+                    }
+                }
+                ,
+                confirmEdit: async function () {
+                    let response = await this.send('PATCH', `https://localhost:8080/times/edit/${this.activeTimeID}`, {
+                        sessionId: parseInt(this.sessionId),
+                        name: this.name,
+                        day: this.day,
+                        start: this.start,
+                        end: this.end,
+                        phone: this.phone
+                    });
+                    if (response.ok) {
+                        this.modalHandler.hide();
+                        this.removeTime(this.activeTimeID);
+                        this.times.push(response.body);
+                        this.sortTimes()
+                        alert("The item change was a success!");
+                    }
+                }
+                ,
+                deleteTime: async function (id) {
+                    this.activeTimeID = id;
+                    let response = await this.send('DELETE', `https://localhost:8080/times/${this.activeTimeID}`, {
+                        sessionId: this.sessionId
+                    });
+                    if (response.ok) {
+                        this.modalHandler.hide();
+                        this.removeTime(id)
+                        alert("The item deletion was a success!");
+                    }
+                }
+                ,
+                confirmAdd: async function () {
+                    let response = await this.send('POST', `https://localhost:8080/times`, {
+                        sessionId: parseInt(this.sessionId),
+                        name: this.name,
+                        day: this.day,
+                        start: this.start,
+                        end: this.end,
+                        phone: this.phone
+                    });
+                    if (response.ok) {
+                        this.modalHandler.hide();
+                        alert("The item got added!");
+                    }
+                }
+                ,
+                send: function (method, url, body) {
+                    async function CheckError(response) {
+                        if (response.status >= 200 && response.status <= 299) {
+                            let responseText = await response.text()
+                            return { ok: true, status: response.status, body: tryToParseJSON(responseText) }
+                        } else {
+                            let responseText = await response.text()
+                            let responseObject = tryToParseJSON(responseText)
+                            if (typeof responseObject === 'object' && typeof responseObject.error === 'string') {
+                                alert('Error code ' + response.status + ":\n" + responseObject.error)
+                            } else {
+                                alert('Error code ' + response.status + ":\n" + responseText)
+                            }
+                            return { ok: false, status: response.status, body: responseObject || responseText }
+                        }
+                    }
+                    const headers = {
+                            'Content-Type': 'application/json'
+                        };
+                        if(this.sessionId) {
+                            headers.Authorization = "Bearer "+ this.sessionId;
+                        }
+                    return fetch(url, {
+                        method: method,
+                        headers,
+                        body: JSON.stringify(body)
+                    })
+                        .then(CheckError)
+                        .then((jsonResponse) => {
+                            return jsonResponse
+                        }).catch((error) => {
+                            throw Error('Network error: ' + error);
+                        });
+                }
+            },
+        }).mount('#app')
+        const connection = new WebSocket("wss://localhost:8080/")
+        connection.onmessage = function (event) {
+            if (!(isNaN(parseInt(event.data)))) { vue.removeTime(parseInt(event.data)) }
             else {
                 vue.removeTime(parseInt(tryToParseJSON(event.data).id))
                 vue.times.push(tryToParseJSON(event.data));
