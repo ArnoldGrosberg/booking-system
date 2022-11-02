@@ -106,6 +106,14 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 app.get('/times', (req, res) => {
     res.send(times)
 })
+app.get('/', (req, res) => {
+    fs.readFile('./index.html', function (err, html) {
+        if (err) {
+            throw err;
+        }
+        res.setHeader('content-type', 'text/html');
+        res.send(html)
+    });
 
 })
 app.patch('/times/:id', requireAdmin, (req, res) => {
