@@ -138,33 +138,43 @@ app.patch('/times/:id', requireAdmin, (req, res) => {
     }
 
     // Check that start is valid
-    if (!req.body.start || !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(req.body.start)) {
-        return res.status(400).send({ error: 'Invalid start' })
+    if (req.body.start) {
+        if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(req.body.start)) {
+            return res.status(400).send({ error: 'Invalid start' })
+        }
+        time.start = req.body.start
     }
-    time.start = req.body.start
 
     // Check that day is valid
-    if (!req.body.day || !isValidFutureDate(req)) {
-        return res.status(400).send({ error: 'Invalid day' })
+    if (req.body.day) {
+        if (!isValidFutureDate(req)) {
+            return res.status(400).send({ error: 'Invalid day' })
+        }
+        time.day = req.body.day
     }
-    time.day = req.body.day
 
     // Check that end is valid
-    if (!req.body.end || !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(req.body.end)) {
-        return res.status(400).send({ error: 'Invalid end' })
+    if (req.body.end) {
+        if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(req.body.end)) {
+            return res.status(400).send({ error: 'Invalid end' })
+        }
+
+        // Check that end is bigger than start
+        if (req.body.end < req.body.start) {
+            return res.status(400).send({ error: 'Invalid end' })
+        }
+        time.end = req.body.end
     }
-    // Check that end is bigger than start
-    if (req.body.end < req.body.start) {
-        return res.status(400).send({ error: 'Invalid end' })
-    }
-    time.end = req.body.end
+
+    // Check that phone is valid
     if (req.body.phone) {
-        // Check that phone is valid
         if (!req.body.phone || !/^\+?[1-9]\d{6,14}$/.test(req.body.phone)) {
             return res.status(400).send({ error: 'Invalid phone' })
         }
         time.phone = req.body.phone
     }
+
+    // Distribute change to other clients
     expressWs.getWss().clients.forEach(client => client.send(JSON.stringify(time)));
     res.status(200).send(time)
 })
@@ -288,6 +298,8 @@ app.patch('/times/patient/:id', (req, res) => {
     // Change name and phone for given id
     time.bookedBy = req.body.name
     time.phone = req.body.phone
+
+    // Distribute change to other clients
     expressWs.getWss().clients.forEach(client => client.send(time.id));
     res.status(200).end()
 })
