@@ -17,6 +17,7 @@
     "https": "^1.0.0",
     "nodemon": "^2.0.19",
     "query-string": "^7.1.1",
+    "swagger-ui-express": "^4.5.0",
     "vue": "^3.2.38",
     "websocket": "^1.0.34",
     "ws": "^8.9.0"

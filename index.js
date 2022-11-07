@@ -4,6 +4,10 @@ const express = require('express')
 const cors = require('cors')
 const app = express()
 const port = 8080
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 let httpsServer = https
     .createServer(
@@ -89,6 +93,41 @@ function requireAdmin(req, res, next) {
     next()
 }
 
+function requireLogin(req, res, next) {
+
+    // Check Authorization header is provided
+    let authorizationHeader = req.header('Authorization')
+    if (!authorizationHeader) {
+        return res.status(401).send({ error: 'You have to login' })
+    }
+
+    // Split Authorization header into an array (by spaces)
+    authorizationHeader = authorizationHeader.split(' ')
+
+    // Check Authorization header for token
+    if (!authorizationHeader[1]) {
+        return res.status(400).json({ error: 'Invalid Authorization header format' })
+    }
+    // Validate token is in mongo ObjectId format to prevent UnhandledPromiseRejectionWarnings
+    if (!parseInt(authorizationHeader[1])) {
+        return res.status(401).send({ error: 'You have to login' })
+    }
+
+    const sessionUser = sessions.find((session) => session.id === parseInt(authorizationHeader[1]));
+    if (!sessionUser) return res.status(401).json({ error: 'Invalid token' });
+
+    // Check that the sessionId in the sessions has user in it
+    const user = users.findById(sessionUser.userId);
+    if (!user) {
+        return res.status(404).send({ error: 'SessionId does not have an user associated with it' })
+    }
+
+    // Write user's id into req
+    req.userId = sessionUser.userId
+    req.sessionId = sessionUser.id
+    next()
+}
+
 function getTime(req) {
     return times.findById(req.params.id);
 }
@@ -106,6 +145,7 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 app.get('/times', (req, res) => {
     res.send(times)
 })
+
 app.get('/', (req, res) => {
     fs.readFile('./index.html', function (err, html) {
         if (err) {
@@ -116,13 +156,16 @@ app.get('/', (req, res) => {
     });
 
 })
+
 app.patch('/times/:id', requireAdmin, (req, res) => {
 
     // Check that :id is a valid number
     if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
         return res.status(400).send({ error: 'Invalid id' })
     }
+
     let time = getTime(req);
+
     // Check that time with given id exists
     if (!time) {
         return res.status(404).send({ error: 'Time not found' })
@@ -130,6 +173,7 @@ app.patch('/times/:id', requireAdmin, (req, res) => {
 
     // Change name, day, start, end and phone for given id if provided
     if (req.body.name) {
+
         // Check that name is valid
         if (!/^\w{2,}/.test(req.body.name)) {
             return res.status(400).send({ error: 'Invalid name' })
@@ -176,6 +220,7 @@ app.patch('/times/:id', requireAdmin, (req, res) => {
 
     // Distribute change to other clients
     expressWs.getWss().clients.forEach(client => client.send(JSON.stringify(time)));
+
     res.status(200).send(time)
 })
 
@@ -231,7 +276,7 @@ app.post('/times', requireAdmin, (req, res) => {
     newTime['id'] = maxTimeId + 1
     times.push(newTime)
     expressWs.getWss().clients.forEach(client => client.send(JSON.stringify(newTime)));
-    res.status(200).end()
+    res.status(201).end()
 })
 
 
@@ -247,7 +292,7 @@ app.delete('/times/:id', requireAdmin, (req, res) => {
     }
     times = times.filter((time) => time.id !== parseInt(req.params.id));
     expressWs.getWss().clients.forEach(client => client.send(parseInt(req.params.id)));
-    res.status(200).end()
+    res.status(204).end()
 })
 
 app.get('/times/available', async (req, res) => {
@@ -279,7 +324,9 @@ app.patch('/times/patient/:id', (req, res) => {
     if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
         return res.status(400).send({ error: 'Invalid id' })
     }
+
     let time = getTime(req);
+
     // Check that time with given id exists
     if (!time) {
         return res.status(404).send({ error: 'Time not found' })
@@ -301,8 +348,10 @@ app.patch('/times/patient/:id', (req, res) => {
 
     // Distribute change to other clients
     expressWs.getWss().clients.forEach(client => client.send(time.id));
+
     res.status(200).end()
 })
+
 app.post('/users', (req, res) => {
     if (!req.body.username || !req.body.password) {
         return res.status(400).send({ error: 'One or all params are missing' })
@@ -340,7 +389,7 @@ app.post('/sessions', (req, res) => {
         { sessionId: sessions.length }
     )
 })
-app.delete('/sessions', (req, res) => {
-    sessions = sessions.filter((session) => session.id === req.body.sessionId);
-    res.status(200).end()
+app.delete('/sessions', requireLogin, (req, res) => {
+    sessions = sessions.filter((session) => session.id === req.sessionId);
+    res.status(204).end()
 })
