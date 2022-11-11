@@ -11,10 +11,13 @@
           integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 </head>
 <body>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <div id="app">
     <div class="text-center">
-        <button @click="showLoginModal" type="button" v-if="!sessionId">Login</button>
+        <button @click="showLoginModal" type="button" v-show="!sessionId">Login</button>
         <button @click="logout" type="button" v-if="sessionId">Logout</button>
+        <div id="signInDiv" v-show="!sessionId"
+             style="display: flex; justify-content: center; align-items: center; text-align: center; margin-top:5px;"></div>
     </div>
     <button @click="showAddEditModal()" type="button">Add item to the list</button>
     <table id="timesTable" class="table table-striped table-bordered">
@@ -116,6 +119,42 @@
         integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13"
         crossorigin="anonymous"></script>
 <script>
+    window.onload = function () {
+        google.accounts.id.initialize({
+            client_id: '230415817594-crmji8nc98jh4v2fg86d4eq1cokp5rv3.apps.googleusercontent.com',
+            callback: handleCredentialResponse
+        });
+        // Google prompt
+        // google.accounts.id.prompt();
+
+        google.accounts.id.renderButton(
+            document.getElementById('signInDiv'),
+            {
+                theme: 'filled_blue',
+                size: 'large',
+                text: 'long',
+                type: 'standard'
+            }
+        )
+    };
+    function handleCredentialResponse(response) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'https://localhost:8080/Oauth2Login');
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function () {
+            // check if the response is valid
+            if (xhr.status === 201) {
+                let sessionId = JSON.parse(xhr.response).sessionId
+                // parse the response and extract the sessionId and save it in a cookie
+                localStorage.setItem("sessionId", sessionId);
+                vue.sessionId = sessionId;
+            } else {
+                console.log('Request failed.  Returned status of ' + xhr.status + " " + xhr.statusText + " " + xhr.responseText);
+            }
+        };
+        xhr.send(JSON.stringify(response));
+    }
+
     function tryToParseJSON(jsonString) {
         try {
             let o = JSON.parse(jsonString);
@@ -165,207 +204,214 @@
                     alert("Network error")
                 }
 
-                localStorage.setItem("times", JSON.stringify(response.body));
-                this.times = response.body;
-                this.sessionId = localStorage.getItem("sessionId");
-            },
-            methods: {
-                sortTimes: function () {
-                    this.times.sort(function (a, b) {
-                        if (a.day < b.day) {
-                            return -1;
-                        }
-                        if (a.day > b.day) {
-                            return 1;
-                        }
-                        return 0;
-                    })
-                }
-                ,
-                showTimeDetailsModal: function (id) {
-                    this.activeTimeID = id;
-                    this.modalHandler = new bootstrap.Modal(document.getElementById('timeDetailsModal'), {})
-                    this.modalHandler.show()
-                }
-                ,
-                showAddEditModal: function (id) {
-                    this.activeTimeID = id;
-                    this.modalMode = id ? this.edit : this.add;
-                    if (this.modalMode == this.edit) {
-                        let clientTime = this.times.findById(id);
-                        this.name = clientTime.name;
-                        this.day = clientTime.day;
-                        this.start = clientTime.start;
-                        this.end = clientTime.end;
-                        this.phone = clientTime.phone;
-                        this.getTime();
+            localStorage.setItem("times", JSON.stringify(response.body));
+            this.times = response.body;
+            this.sessionId = localStorage.getItem("sessionId");
+        },
+        methods: {
+            sortTimes: function () {
+                this.times.sort(function (a, b) {
+                    if (a.day < b.day) {
+                        return -1;
                     }
-                    this.modalHandler = new bootstrap.Modal(document.getElementById('addEditModal'), {})
-                    this.modalHandler.show()
-                }
-                ,
-                showLoginModal: function () {
-                    this.modalHandler = new bootstrap.Modal(document.getElementById('loginModal'), {})
-                    this.modalHandler.show()
-                }
-                ,
-                removeTime: function (id) {
-                    this.times = this.times.filter(x => {
-                        return x.id !== id;
-                    })
-                }
-                ,
-                book: async function () {
-                    let response = await this.send('PATCH', `https://localhost:8080/times/patient/${this.activeTimeID}`, {
-                        name: this.name,
-                        phone: this.phone
-                    });
-                    if (response.ok) {
-                        this.modalHandler.hide()
-                        this.removeTime(this.activeTimeID);
-                        alert("The booking was a success!");
+                    if (a.day > b.day) {
+                        return 1;
                     }
-
-                }
-                ,
-                getTime: async function () {
-                    let response = await this.send('GET', `https://localhost:8080/times/${this.activeTimeID}`);
-                    if (response.body) {
-                        this.name = response.body.name;
-                        this.day = response.body.day;
-                        this.start = response.body.start;
-                        this.end = response.body.end;
-                        this.phone = response.body.phone;
-                    }
-                }
-                ,
-                logIn: async function () {
-                    let response = await this.send('POST', `https://localhost:8080/sessions`, {
-                        username: this.username,
-                        password: this.password
-                    });
-                    if (response.ok) {
-                        this.sessionId = response.body.sessionId;
-                        localStorage.setItem("sessionId", this.sessionId);
-                        this.modalHandler.hide()
-                    }
-                }
-                ,
-                register: async function () {
-                    let response = await this.send('POST', `https://localhost:8080/users`, {
-                        username: this.username,
-                        password: this.password
-                    });
-                    if (response.ok) {
-                        this.sessionId = response.body.sessionId;
-                        localStorage.setItem("sessionId", this.sessionId);
-                        this.modalHandler.hide()
-                        alert("The registration was a success!");
-                    }
-                }
-                ,
-                logout: async function () {
-                    let response = await this.send('DELETE', `https://localhost:8080/sessions`, {
-                        sessionId: this.sessionId
-                    });
-                    if (response.ok) {
-                        this.sessionId = null;
-                        localStorage.clear();
-                        this.modalHandler.hide();
-                    }
-                }
-                ,
-                confirmEdit: async function () {
-                    let response = await this.send('PATCH', `https://localhost:8080/times/${this.activeTimeID}`, {
-                        sessionId: parseInt(this.sessionId),
-                        name: this.name,
-                        day: this.day,
-                        start: this.start,
-                        end: this.end,
-                        phone: this.phone
-                    });
-                    if (response.ok) {
-                        this.modalHandler.hide();
-                        this.removeTime(this.activeTimeID);
-                        this.times.push(response.body);
-                        this.sortTimes()
-                        alert("The item change was a success!");
-                    }
-                }
-                ,
-                deleteTime: async function (id) {
-                    this.activeTimeID = id;
-                    let response = await this.send('DELETE', `https://localhost:8080/times/${this.activeTimeID}`, {
-                        sessionId: this.sessionId
-                    });
-                    if (response.ok) {
-                        this.modalHandler.hide();
-                        this.removeTime(id)
-                        alert("The item deletion was a success!");
-                    }
-                }
-                ,
-                confirmAdd: async function () {
-                    let response = await this.send('POST', `https://localhost:8080/times`, {
-                        sessionId: parseInt(this.sessionId),
-                        name: this.name,
-                        day: this.day,
-                        start: this.start,
-                        end: this.end,
-                        phone: this.phone
-                    });
-                    if (response.ok) {
-                        this.modalHandler.hide();
-                        alert("The item got added!");
-                    }
-                }
-                ,
-                send: function (method, url, body) {
-                    async function CheckError(response) {
-                        if (response.status >= 200 && response.status <= 299) {
-                            let responseText = await response.text()
-                            return { ok: true, status: response.status, body: tryToParseJSON(responseText) }
-                        } else {
-                            let responseText = await response.text()
-                            let responseObject = tryToParseJSON(responseText)
-                            if (typeof responseObject === 'object' && typeof responseObject.error === 'string') {
-                                alert('Error code ' + response.status + ":\n" + responseObject.error)
-                            } else {
-                                alert('Error code ' + response.status + ":\n" + responseText)
-                            }
-                            return { ok: false, status: response.status, body: responseObject || responseText }
-                        }
-                    }
-                    const headers = {
-                            'Content-Type': 'application/json'
-                        };
-                        if(this.sessionId) {
-                            headers.Authorization = "Bearer "+ this.sessionId;
-                        }
-                    return fetch(url, {
-                        method: method,
-                        headers,
-                        body: JSON.stringify(body)
-                    })
-                        .then(CheckError)
-                        .then((jsonResponse) => {
-                            return jsonResponse
-                        }).catch((error) => {
-                            throw Error('Network error: ' + error);
-                        });
-                }
-            },
-        }).mount('#app')
-        const connection = new WebSocket("wss://localhost:8080/")
-        connection.onmessage = function (event) {
-            if (!(isNaN(parseInt(event.data)))) { vue.removeTime(parseInt(event.data)) }
-            else {
-                vue.removeTime(parseInt(tryToParseJSON(event.data).id))
-                vue.times.push(tryToParseJSON(event.data));
-                vue.sortTimes()
+                    return 0;
+                })
             }
+            ,
+            showTimeDetailsModal: function (id) {
+                this.activeTimeID = id;
+                this.modalHandler = new bootstrap.Modal(document.getElementById('timeDetailsModal'), {})
+                this.modalHandler.show()
+            }
+            ,
+            showAddEditModal: function (id) {
+                this.activeTimeID = id;
+                this.modalMode = id ? this.edit : this.add;
+                if (this.modalMode == this.edit) {
+                    let clientTime = this.times.findById(id);
+                    this.name = clientTime.name;
+                    this.day = clientTime.day;
+                    this.start = clientTime.start;
+                    this.end = clientTime.end;
+                    this.phone = clientTime.phone;
+                    this.getTime();
+                }
+                this.modalHandler = new bootstrap.Modal(document.getElementById('addEditModal'), {})
+                this.modalHandler.show()
+            }
+            ,
+            showLoginModal: function () {
+                this.modalHandler = new bootstrap.Modal(document.getElementById('loginModal'), {})
+                this.modalHandler.show()
+            }
+            ,
+            removeTime: function (id) {
+                this.times = this.times.filter(x => {
+                    return x.id !== id;
+                })
+            }
+            ,
+            book: async function () {
+                let response = await this.send('PATCH', `https://localhost:8080/times/patient/${this.activeTimeID}`, {
+                    name: this.name,
+                    phone: this.phone
+                });
+                if (response.ok) {
+                    this.modalHandler.hide()
+                    this.removeTime(this.activeTimeID);
+                    alert("The booking was a success!");
+                }
+
+            }
+            ,
+            getTime: async function () {
+                let response = await this.send('GET', `https://localhost:8080/times/${this.activeTimeID}`);
+                if (response.body) {
+                    this.name = response.body.name;
+                    this.day = response.body.day;
+                    this.start = response.body.start;
+                    this.end = response.body.end;
+                    this.phone = response.body.phone;
+                }
+            }
+            ,
+            logIn: async function () {
+                let response = await this.send('POST', `https://localhost:8080/sessions`, {
+                    username: this.username,
+                    password: this.password
+                });
+                if (response.ok) {
+                    this.sessionId = response.body.sessionId;
+                    localStorage.setItem("sessionId", this.sessionId);
+                    this.modalHandler.hide()
+                }
+            }
+            ,
+            register: async function () {
+                let response = await this.send('POST', `https://localhost:8080/users`, {
+                    username: this.username,
+                    password: this.password
+                });
+                if (response.ok) {
+                    this.sessionId = response.body.sessionId;
+                    localStorage.setItem("sessionId", this.sessionId);
+                    this.modalHandler.hide()
+                    alert("The registration was a success!");
+                }
+            }
+            ,
+            logout: async function () {
+                let response = await this.send('DELETE', `https://localhost:8080/sessions`, {
+                    sessionId: this.sessionId
+                });
+                this.clearStorageAndToggleLoginButtons();
+            }
+            ,
+            clearStorageAndToggleLoginButtons: function () {
+                this.sessionId = null;
+                localStorage.removeItem("sessionId");
+            }
+            ,
+            confirmEdit: async function () {
+                let response = await this.send('PATCH', `https://localhost:8080/times/${this.activeTimeID}`, {
+                    sessionId: parseInt(this.sessionId),
+                    name: this.name,
+                    day: this.day,
+                    start: this.start,
+                    end: this.end,
+                    phone: this.phone
+                });
+                if (response.ok) {
+                    this.modalHandler.hide();
+                    this.removeTime(this.activeTimeID);
+                    this.times.push(response.body);
+                    this.sortTimes()
+                    alert("The item change was a success!");
+                }
+            }
+            ,
+            deleteTime: async function (id) {
+                this.activeTimeID = id;
+                let response = await this.send('DELETE', `https://localhost:8080/times/${this.activeTimeID}`, {
+                    sessionId: this.sessionId
+                });
+                if (response.ok) {
+                    this.modalHandler.hide();
+                    this.removeTime(id)
+                    alert("The item deletion was a success!");
+                }
+            }
+            ,
+            confirmAdd: async function () {
+                let response = await this.send('POST', `https://localhost:8080/times`, {
+                    sessionId: parseInt(this.sessionId),
+                    name: this.name,
+                    day: this.day,
+                    start: this.start,
+                    end: this.end,
+                    phone: this.phone
+                });
+                if (response.ok) {
+                    this.modalHandler.hide();
+                    alert("The item got added!");
+                }
+            }
+            ,
+            send: function (method, url, body) {
+                const vue = this;
+                async function CheckError(response) {
+                    if (response.status >= 200 && response.status <= 299) {
+                        let responseText = await response.text()
+                        return {ok: true, status: response.status, body: tryToParseJSON(responseText)}
+                    } else {
+                        let responseText = await response.text()
+                        let responseObject = tryToParseJSON(responseText)
+                        if (typeof responseObject === 'object' && typeof responseObject.error === 'string') {
+                            if (response.status === 401 && responseObject.error === "Invalid token") {
+                                vue.clearStorageAndToggleLoginButtons();
+                            }
+                            alert('Error code ' + response.status + ":\n" + responseObject.error)
+                        } else {
+                            alert('Error code ' + response.status + ":\n" + responseText)
+                        }
+                        return {ok: false, status: response.status, body: responseObject || responseText}
+                    }
+                }
+
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (this.sessionId) {
+                    headers.Authorization = "Bearer " + this.sessionId;
+                }
+                return fetch(url, {
+                    method: method,
+                    headers,
+                    body: JSON.stringify(body)
+                })
+                    .then(CheckError)
+                    .then((jsonResponse) => {
+                        return jsonResponse
+                    }).catch((error) => {
+                        throw Error('Network error: ' + error);
+                    });
+            }
+        },
+    }).mount('#app')
+    const connection = new WebSocket("wss://localhost:8080/")
+    connection.onmessage = function (event) {
+        if (!(isNaN(parseInt(event.data)))) {
+            vue.removeTime(parseInt(event.data))
+        } else {
+            vue.removeTime(parseInt(tryToParseJSON(event.data).id))
+            vue.times.push(tryToParseJSON(event.data));
+            vue.sortTimes()
         }
-    </script>
+    }
+</script>
 </body>
 
 </html>

@@ -6,6 +6,8 @@ const app = express()
 const port = 8080
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
+const {OAuth2Client} = require('google-auth-library');
+const googleOAuth2Client = new OAuth2Client('230415817594-crmji8nc98jh4v2fg86d4eq1cokp5rv3.apps.googleusercontent.com');
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -23,9 +25,36 @@ let httpsServer = https
     .listen(port, () => {
         console.log("serever is runing at port " + port);
     });
-var expressWs = require('express-ws')(app, httpsServer);
+const expressWs = require('express-ws')(app, httpsServer);
 app.use(cors())        // Avoid CORS errors in browsers
 app.use(express.json()) // Populate req.body
+async function getDataFromGoogleJwt(token) {
+    const ticket = await googleOAuth2Client.verifyIdToken({
+        idToken: token,
+        audience: '230415817594-crmji8nc98jh4v2fg86d4eq1cokp5rv3.apps.googleusercontent.com',
+    });
+    return ticket.getPayload();
+}
+
+app.post('/Oauth2Login', async (req, res) => {
+    try {
+        const dataFromGoogleJwt = await getDataFromGoogleJwt(req.body.credential)
+        let user = users.findBy('email', dataFromGoogleJwt.email);
+        if (!user) {
+            user = createUser({
+                username: dataFromGoogleJwt.name,
+                email: dataFromGoogleJwt.email
+            })
+        }
+        const newSession = createSession(user.id)
+        return res.status(201).send(
+            {sessionId: newSession.id}
+        )
+    } catch (err) {
+        return res.status(400).send({error: 'Login unsuccessful'});
+    }
+    ;
+});
 
 app.ws('/', function (ws, req) {
     ws.on('message', function (msg) {
@@ -47,6 +76,22 @@ const users = [
 let sessions = [
     { id: 1, userId: 1 }
 ]
+
+function createUser(user) {
+    user.id = users.length + 1;
+    users.push(user)
+    return user;
+}
+
+function createSession(userId) {
+    // Find max id from sessions using reduce
+    let newSession = {
+        id: sessions.reduce((max, p) => p.id > max ? p.id : max, 0)+1,
+        userId
+    }
+    sessions.push(newSession)
+    return newSession
+}
 
 function isValidFutureDate(req) {
     const date = new Date(req.body.day + ' ' + req.body.start);
@@ -362,15 +407,12 @@ app.post('/users', (req, res) => {
         return res.status(409).send({ error: 'Conflict: The user already exists. ' })
     }
 
-    users.push({ id: users.length + 1, username: req.body.username, password: req.body.password, isAdmin: false })
-
-    user = users.findById(users.length);
-    let newSession = {
-        id: sessions.length + 1,
-        userId: user.id
-    }
-    sessions.push(newSession)
-    res.status(201).send({ sessionId: sessions.length })
+    user = createUser({
+        username: req.body.username,
+        password: req.body.password
+    });
+    const newSession = createSession(user.id)
+    res.status(201).send({sessionId: newSession.id})
 })
 app.post('/sessions', (req, res) => {
     if (!req.body.username || !req.body.password) {
