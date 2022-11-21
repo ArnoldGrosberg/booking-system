@@ -246,7 +246,7 @@
                                 }
                             }
                         },
-                        "description": "You have to login"
+                        "description": "Unauthorized: email or password is incorrect"
                     }
                 },
                 "summary": "Login"
@@ -381,7 +381,26 @@
                         "description": "User created - returns a `sessionId` for the user."
                     },
                     "400": {
-                        "description": "One or all params are missing"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error"
+                                },
+                                "examples": {
+                                    "One or all params are missing": {
+                                        "value": {
+                                            "error": "One or all params are missing"
+                                        }
+                                    },
+                                    "Invalid email": {
+                                        "value": {
+                                            "error": "Invalid email"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "Bad request"
                     },
                     "409": {
                         "description": "The user already exists. "

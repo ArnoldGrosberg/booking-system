@@ -16,14 +16,11 @@ let httpsServer = https
         // Provide the private and public key to the server by reading each
         // file's content with the readFileSync() method.
         {
-            key: fs.readFileSync("key.pem"),
-            cert: fs.readFileSync("cert.pem"),
-        },
-        app
-    )
+            key: fs.readFileSync("key.pem"), cert: fs.readFileSync("cert.pem"),
+        }, app)
 
     .listen(port, () => {
-        console.log("serever is runing at port " + port);
+        console.log("Server is running at port " + port);
     });
 const expressWs = require('express-ws')(app, httpsServer);
 app.use(cors())        // Avoid CORS errors in browsers
@@ -39,11 +36,10 @@ async function getDataFromGoogleJwt(token) {
 app.post('/Oauth2Login', async (req, res) => {
     try {
         const dataFromGoogleJwt = await getDataFromGoogleJwt(req.body.credential)
-        let user = users.findBy('email', dataFromGoogleJwt.email);
+        let user = users.findBy('sub', dataFromGoogleJwt.sub);
         if (!user) {
             user = createUser({
-                username: dataFromGoogleJwt.name,
-                email: dataFromGoogleJwt.email
+                username: dataFromGoogleJwt.name, email: dataFromGoogleJwt.email, sub: dataFromGoogleJwt.sub
             })
         }
         const newSession = createSession(user.id)
@@ -53,25 +49,24 @@ app.post('/Oauth2Login', async (req, res) => {
     } catch (err) {
         return res.status(400).send({error: 'Login unsuccessful'});
     }
-    ;
 });
 
-app.ws('/', function (ws, req) {
+app.ws('/', function (ws) {
     ws.on('message', function (msg) {
         expressWs.getWss().clients.forEach(client => client.send(msg));
     });
 });
 
-let times = [
-    { id: 1, day: "2022-02-14", start: "8:00", end: "8:30", bookedBy: "" },
-    { id: 2, day: "2022-02-15", start: "8:00", end: "8:30", bookedBy: "Testing123" },
-    { id: 3, day: "2022-02-16", start: "8:30", end: "9:00", bookedBy: "" },
-    { id: 4, day: "2022-02-17", start: "9:00", end: "9:30", bookedBy: "Test2" }
-]
-const users = [
-    { id: 1, username: "Admin", password: "Password", isAdmin: true },
-    { id: 2, username: "User", password: "Password", isAdmin: false }
-]
+let times = [{id: 1, day: "2022-02-14", start: "8:00", end: "8:30"}, {
+    id: 2, day: "2025-02-15", start: "8:00", end: "8:30"
+}, {id: 3, day: "2025-02-16", start: "8:30", end: "9:00"}, {
+    id: 4, day: "2025-02-17", start: "9:00", end: "9:30"
+}, {id: 5, day: "2025-02-17", start: "9:30", end: "10:00"}, {
+    id: 6, day: "2025-02-17", start: "10:00", end: "10:30"
+},]
+const users = [{id: 1, email: "Admin", password: "Password", isAdmin: true}, {
+    id: 2, email: "User", password: "Password", isAdmin: false
+}]
 
 let sessions = [
     { id: 1, userId: 1 }
@@ -398,29 +393,30 @@ app.patch('/times/patient/:id', (req, res) => {
 })
 
 app.post('/users', (req, res) => {
-    if (!req.body.username || !req.body.password) {
-        return res.status(400).send({ error: 'One or all params are missing' })
+    if (!req.body.email || !req.body.password) {
+        return res.status(400).send({error: 'One or all params are missing'})
     }
-
-    let user = users.findBy('username', req.body.username);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.body.email)) {
+        return res.status(400).send({error: 'Invalid email'})
+    }
+    let user = users.findBy('email', req.body.email);
     if (user) {
         return res.status(409).send({ error: 'Conflict: The user already exists. ' })
     }
 
     user = createUser({
-        username: req.body.username,
-        password: req.body.password
+        email: req.body.email, password: req.body.password
     });
     const newSession = createSession(user.id)
     res.status(201).send({sessionId: newSession.id})
 })
 app.post('/sessions', (req, res) => {
-    if (!req.body.username || !req.body.password) {
-        return res.status(400).send({ error: 'One or all params are missing' })
+    if (!req.body.email || !req.body.password) {
+        return res.status(400).send({error: 'One or all params are missing'})
     }
-    const user = users.find((user) => user.username === req.body.username && user.password === req.body.password);
+    const user = users.find((user) => user.email === req.body.email && user.password === req.body.password);
     if (!user) {
-        return res.status(401).send({ error: 'Unauthorized: username or password is incorrect' })
+        return res.status(401).send({error: 'Unauthorized: email or password is incorrect'})
     }
     let newSession = {
         id: sessions.length + 1,
@@ -432,6 +428,6 @@ app.post('/sessions', (req, res) => {
     )
 })
 app.delete('/sessions', requireLogin, (req, res) => {
-    sessions = sessions.filter((session) => session.id === req.sessionId);
+    sessions = sessions.filter((session) => session.id !== req.sessionId);
     res.status(204).end()
 })

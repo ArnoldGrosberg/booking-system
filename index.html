@@ -47,8 +47,8 @@
                 <div class="modal-body">
                     <p>Please fill out the login details: </p><br>
                     <form>
-                        <label for="username">Username:</label><br>
-                        <input id="username" name="username" type="text" v-model="username"><br>
+                        <label for="email">Email:</label><br>
+                        <input id="email" name="email" type="email" v-model="email"><br>
                         <label for="password">Password:</label><br>
                         <input id="password" name="password" type="password" v-model="password">
                     </form>
@@ -174,36 +174,41 @@
         return this.findBy('id', parseInt(value))
     }
 
-        const vue = Vue.createApp({
-            data() {
-                return {
-                    modalHandler: null,
-                    timeInModal: null,
-                    times: [],
-                    activeTimeID: 0,
-                    name: null,
-                    phone: null,
-                    username: null,
-                    password: null,
-                    day: null,
-                    start: null,
-                    end: null,
-                    sessionId: null,
-                    modalMode: null,
-                    add: 1,
-                    edit: 2
-                }
-            },
-            async created() {
-                this.times = JSON.parse(localStorage.getItem("times"));
-                console.table(this.times);
-                let response;
-                try {
-                    response = await this.send('GET', 'https://localhost:8080/times/available');
-                } catch (e) {
-                    alert("Network error")
-                }
-
+    const vue = Vue.createApp({
+        data() {
+            return {
+                modalHandler: null,
+                timeInModal: null,
+                times: [],
+                bookedTimes: [],
+                activeTimeID: 0,
+                name: null,
+                phone: null,
+                email: null,
+                password: null,
+                day: null,
+                start: null,
+                end: null,
+                sessionId: null,
+                modalMode: null,
+                add: 1,
+                edit: 2,
+                isAdmin: false
+            }
+        },
+        async created() {
+            this.times = JSON.parse(localStorage.getItem("times"));
+            console.table(this.times);
+            if ((localStorage.getItem("bookedTimes"))) {
+                this.bookedTimes = JSON.parse(localStorage.getItem("bookedTimes"));
+                console.table(this.bookedTimes);
+            }
+            let response;
+            try {
+                response = await this.send('GET', 'https://localhost:8080/times/available');
+            } catch (e) {
+                alert("Network error")
+            }
             localStorage.setItem("times", JSON.stringify(response.body));
             this.times = response.body;
             this.sessionId = localStorage.getItem("sessionId");
@@ -280,7 +285,7 @@
             ,
             logIn: async function () {
                 let response = await this.send('POST', `https://localhost:8080/sessions`, {
-                    username: this.username,
+                    email: this.email,
                     password: this.password
                 });
                 if (response.ok) {
@@ -292,7 +297,7 @@
             ,
             register: async function () {
                 let response = await this.send('POST', `https://localhost:8080/users`, {
-                    username: this.username,
+                    email: this.email,
                     password: this.password
                 });
                 if (response.ok) {
@@ -317,7 +322,6 @@
             ,
             confirmEdit: async function () {
                 let response = await this.send('PATCH', `https://localhost:8080/times/${this.activeTimeID}`, {
-                    sessionId: parseInt(this.sessionId),
                     name: this.name,
                     day: this.day,
                     start: this.start,
@@ -335,11 +339,8 @@
             ,
             deleteTime: async function (id) {
                 this.activeTimeID = id;
-                let response = await this.send('DELETE', `https://localhost:8080/times/${this.activeTimeID}`, {
-                    sessionId: this.sessionId
-                });
+                let response = await this.send('DELETE', `https://localhost:8080/times/${this.activeTimeID}`, {});
                 if (response.ok) {
-                    this.modalHandler.hide();
                     this.removeTime(id)
                     alert("The item deletion was a success!");
                 }
@@ -347,7 +348,6 @@
             ,
             confirmAdd: async function () {
                 let response = await this.send('POST', `https://localhost:8080/times`, {
-                    sessionId: parseInt(this.sessionId),
                     name: this.name,
                     day: this.day,
                     start: this.start,
