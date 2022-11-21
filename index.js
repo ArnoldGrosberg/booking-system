@@ -43,9 +43,10 @@ app.post('/Oauth2Login', async (req, res) => {
             })
         }
         const newSession = createSession(user.id)
-        return res.status(201).send(
-            {sessionId: newSession.id}
-        )
+        let clientbookedTimes = times.filter((time) => time.userId === newSession.userId);
+        res.status(201).send({
+            sessionId: newSession.id, isAdmin: user.isAdmin, bookedTimes: JSON.stringify(clientbookedTimes)
+        })
     } catch (err) {
         return res.status(400).send({error: 'Login unsuccessful'});
     }
@@ -74,6 +75,7 @@ let sessions = [
 
 function createUser(user) {
     user.id = users.length + 1;
+    user.isAdmin = false;
     users.push(user)
     return user;
 }
@@ -94,7 +96,7 @@ function isValidFutureDate(req) {
     return new Date() <= date;
 }
 
-function requireAdmin(req, res, next) {
+function requireAdmin(req, res) {
 
     // Check Authorization header is provided
     let authorizationHeader = req.header('Authorization')
@@ -130,7 +132,6 @@ function requireAdmin(req, res, next) {
     if (!user.isAdmin) {
         return res.status(400).send({ error: 'Insufficient permissions' })
     }
-    next()
 }
 
 function requireLogin(req, res, next) {
@@ -165,11 +166,16 @@ function requireLogin(req, res, next) {
     // Write user's id into req
     req.userId = sessionUser.userId
     req.sessionId = sessionUser.id
+    req.isAdmin = user.isAdmin
     next()
 }
 
 function getTime(req) {
     return times.findById(req.params.id);
+}
+
+function getBookedTimes(req) {
+    return times.filter((time) => time.userId === req.userId);
 }
 
 Array.prototype.findById = function (value) {
@@ -197,7 +203,7 @@ app.get('/', (req, res) => {
 
 })
 
-app.patch('/times/:id', requireAdmin, (req, res) => {
+app.patch('/times/:id', requireLogin, (req, res) => {
 
     // Check that :id is a valid number
     if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
@@ -219,10 +225,13 @@ app.patch('/times/:id', requireAdmin, (req, res) => {
             return res.status(400).send({ error: 'Invalid name' })
         }
         time.bookedBy = req.body.name
+        time.userId = req.userId
     }
 
     // Check that start is valid
     if (req.body.start) {
+        requireAdmin(req, res, () => {
+        })
         if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(req.body.start)) {
             return res.status(400).send({ error: 'Invalid start' })
         }
@@ -231,6 +240,8 @@ app.patch('/times/:id', requireAdmin, (req, res) => {
 
     // Check that day is valid
     if (req.body.day) {
+        requireAdmin(req, res, () => {
+        })
         if (!isValidFutureDate(req)) {
             return res.status(400).send({ error: 'Invalid day' })
         }
@@ -239,6 +250,8 @@ app.patch('/times/:id', requireAdmin, (req, res) => {
 
     // Check that end is valid
     if (req.body.end) {
+        requireAdmin(req, res, () => {
+        })
         if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(req.body.end)) {
             return res.status(400).send({ error: 'Invalid end' })
         }
@@ -256,11 +269,23 @@ app.patch('/times/:id', requireAdmin, (req, res) => {
             return res.status(400).send({ error: 'Invalid phone' })
         }
         time.phone = req.body.phone
+        time.userId = req.userId
+    }
+    if ((!req.body.name && req.body.phone) || (!req.body.phone && req.body.name)) {
+        requireAdmin(req, res, () => {
+        })
+    }
+    if (!req.body.name && !req.body.phone) {
+        time.bookedBy = null
+        time.phone = null
+        time.userId = null
     }
 
     // Distribute change to other clients
     expressWs.getWss().clients.forEach(client => client.send(JSON.stringify(time)));
-
+    if (req.body.name && req.body.phone) {
+        expressWs.getWss().clients.forEach(client => client.send(time.id));
+    }
     res.status(200).send(time)
 })
 
@@ -350,7 +375,7 @@ app.get('/times/available', async (req, res) => {
     res.send(timesAvailable)
 })
 
-app.get('/times/:id', (req, res) => {
+app.get('/time/:id', (req, res) => {
     let time = getTime(req);
     if (!time) {
         return res.status(404).send({ error: "Time not found" })
@@ -358,38 +383,12 @@ app.get('/times/:id', (req, res) => {
     res.send(time)
 })
 
-app.patch('/times/patient/:id', (req, res) => {
-
-    // Check that :id is a valid number
-    if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
-        return res.status(400).send({ error: 'Invalid id' })
+app.get('/times/booked', requireLogin, (req, res) => {
+    let bookedTimes = getBookedTimes(req);
+    if (!bookedTimes) {
+        return res.status(404).send({error: "Booked times not found"})
     }
-
-    let time = getTime(req);
-
-    // Check that time with given id exists
-    if (!time) {
-        return res.status(404).send({ error: 'Time not found' })
-    }
-
-    // Check that name is valid
-    if (!/^\w{4,}/.test(req.body.name)) {
-        return res.status(400).send({ error: 'Invalid name' })
-    }
-
-    // Check that phone is valid
-    if (!/^\+?[1-9]\d{6,14}$/.test(req.body.phone)) {
-        return res.status(400).send({ error: 'Invalid phone' })
-    }
-
-    // Change name and phone for given id
-    time.bookedBy = req.body.name
-    time.phone = req.body.phone
-
-    // Distribute change to other clients
-    expressWs.getWss().clients.forEach(client => client.send(time.id));
-
-    res.status(200).end()
+    res.send({bookedTimes: JSON.stringify(bookedTimes), isAdmin: req.isAdmin})
 })
 
 app.post('/users', (req, res) => {
@@ -423,9 +422,10 @@ app.post('/sessions', (req, res) => {
         userId: user.id
     }
     sessions.push(newSession)
-    res.status(201).send(
-        { sessionId: sessions.length }
-    )
+    let clientbookedTimes = times.filter((time) => time.userId === newSession.userId);
+    res.status(201).send({
+        sessionId: sessions.length, isAdmin: user.isAdmin, bookedTimes: JSON.stringify(clientbookedTimes)
+    })
 })
 app.delete('/sessions', requireLogin, (req, res) => {
     sessions = sessions.filter((session) => session.id !== req.sessionId);
