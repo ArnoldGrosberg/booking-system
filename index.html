@@ -169,10 +169,13 @@
         xhr.onload = function () {
             // check if the response is valid
             if (xhr.status === 201) {
-                let sessionId = JSON.parse(xhr.response).sessionId
+                // parse the response
+                var response = JSON.parse(xhr.responseText);
+                let sessionId = response.sessionId
                 // parse the response and extract the sessionId and save it in a cookie
                 localStorage.setItem("sessionId", sessionId);
                 vue.sessionId = sessionId;
+                vue.isAdmin = response.isAdmin;
             } else {
                 console.log('Request failed.  Returned status of ' + xhr.status + " " + xhr.statusText + " " + xhr.responseText);
             }

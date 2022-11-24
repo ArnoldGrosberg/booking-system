@@ -65,7 +65,7 @@ let times = [{id: 1, day: "2022-02-14", start: "8:00", end: "8:30"}, {
 }, {id: 5, day: "2025-02-17", start: "9:30", end: "10:00"}, {
     id: 6, day: "2025-02-17", start: "10:00", end: "10:30"
 },]
-const users = [{id: 1, email: "Admin", password: "Password", isAdmin: true}, {
+const users = [{id: 1, email: "Admin", password: "Password", isAdmin: true, sub: "102881469727696684931"}, {
     id: 2, email: "User", password: "Password", isAdmin: false
 }]
 
