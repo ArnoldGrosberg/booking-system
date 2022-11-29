@@ -14,12 +14,13 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <div id="app">
     <div class="text-center">
-        <button @click="showLoginModal" type="button" v-show="!sessionId">Login</button>
-        <button @click="logout" type="button" v-if="sessionId">Logout</button>
+        <button type="button" @click="showLoginModal" v-show="!sessionId">Login</button>
+        <button type="button" @click="logout" v-if="sessionId">Logout</button>
         <div id="signInDiv" v-show="!sessionId"
              style="display: flex; justify-content: center; align-items: center; text-align: center; margin-top:5px;"></div>
     </div>
-    <button @click="showAddEditModal()" type="button">Add item to the list</button>
+    <button type="button" @click="showAddEditModal()" v-if="isAdmin">Add item to the list</button>
+    <button type="button" @click="getLogs()" v-if="isAdmin">Logs</button>
     <h1>Available times</h1>
     <table id="timesTable" class="table table-striped table-bordered">
         <tr>
@@ -33,9 +34,9 @@
             <td>{{ time.start }}</td>
             <td>{{ time.end }}</td>
             <td>
-                <button @click="showTimeDetailsModal(time.id)" type="button">Book</button>
-                <button @click="showAddEditModal(time.id)" type="button" v-if="isAdmin">Edit</button>
-                <button @click="deleteTime(time.id)" type="button" v-if="isAdmin">Delete</button>
+                <button type="button" @click="showTimeDetailsModal(time.id)">Book</button>
+                <button type="button" @click="showAddEditModal(time.id)" v-if="isAdmin">Edit</button>
+                <button type="button" @click="deleteTime(time.id)" v-if="isAdmin">Delete</button>
             </td>
         </tr>
     </table>
@@ -57,8 +58,8 @@
                 <td>{{ time.bookedBy }}</td>
                 <td>{{ time.phone }}</td>
                 <td>
-                    <button @click="showAddEditModal(time.id)" type="button" v-if="isAdmin">Edit</button>
-                    <button @click="cancelBooking(time.id)" type="button">Cancel</button>
+                    <button type="button" @click="showAddEditModal(time.id)" v-if="isAdmin">Edit</button>
+                    <button type="button" @click="cancelBooking(time.id)">Cancel</button>
                 </td>
             </tr>
         </table>
@@ -67,7 +68,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                    <button type="button" aria-label="Close" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <p>Please fill out the login details: </p><br>
@@ -79,9 +80,9 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
-                    <button @click="register" class="btn btn-secondary" type="button">Register</button>
-                    <button @click="logIn" class="btn btn-primary" type="button">Confirm login</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" @click="register" class="btn btn-secondary">Register</button>
+                    <button type="button" @click="logIn" class="btn btn-primary">Confirm login</button>
                 </div>
             </div>
         </div>
@@ -115,8 +116,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p v-if="modalMode === edit" >Please fill out the form for changing the item: </p><br>
-                    <p v-if="modalMode === add" >Please fill out the form for adding the item: </p><br>
+                    <p v-if="modalMode === edit">Please fill out the form for changing the item: </p><br>
+                    <p v-if="modalMode === add">Please fill out the form for adding the item: </p><br>
                     <form>
                         <label for="nameEdit">Name:</label><br>
                         <input id="nameEdit" name="name" type="text" v-model="name"><br>
@@ -132,8 +133,43 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button @click="confirmEdit()" class="btn btn-primary" v-if="modalMode === edit" >Confirm</button>
-                    <button @click="confirmAdd()" class="btn btn-primary" v-if="modalMode === add" >Confirm</button>
+                    <button @click="confirmEdit()" class="btn btn-primary" v-if="modalMode === edit">Confirm</button>
+                    <button @click="confirmAdd()" class="btn btn-primary" v-if="modalMode === add">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="logsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Logs</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User ip</th>
+                            <th>User id</th>
+                            <th>Event name</th>
+                            <th>Event data</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="log in logs">
+                            <td>{{ log.timeStamp }}</td>
+                            <td>{{ log.userIp }}</td>
+                            <td>{{ log.userId }}</td>
+                            <td>{{ log.eventName }}</td>
+                            <td>{{ log.extraData }}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
                 </div>
             </div>
         </div>
@@ -162,9 +198,10 @@
             }
         )
     };
+
     function handleCredentialResponse(response) {
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'https://localhost:8080/Oauth2Login');
+        xhr.open('POST', 'https://localhost:8080/oAuth2Login');
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.onload = function () {
             // check if the response is valid
@@ -193,6 +230,7 @@
         }
         return '';
     }
+
     Array.prototype.findBy = function (field, value) {
         return this.find(function (x) {
             return x[field] === value;
@@ -209,6 +247,7 @@
                 timeInModal: null,
                 times: [],
                 bookedTimes: [],
+                logs: [],
                 activeTimeID: 0,
                 name: null,
                 phone: null,
@@ -225,8 +264,10 @@
             }
         },
         async created() {
-            this.times = JSON.parse(localStorage.getItem("times"));
-            console.table(this.times);
+            if ((localStorage.getItem("times"))) {
+                this.times = JSON.parse(localStorage.getItem("times"));
+                console.table(this.times);
+            }
             if ((localStorage.getItem("bookedTimes"))) {
                 this.bookedTimes = JSON.parse(localStorage.getItem("bookedTimes"));
                 console.table(this.bookedTimes);
@@ -267,7 +308,7 @@
                 })
             }
             ,
-            sortbookedTimes: function () {
+            sortBookedTimes: function () {
                 this.bookedTimes.sort(function (a, b) {
                     if (a.day < b.day) {
                         return -1;
@@ -281,6 +322,14 @@
             ,
             showTimeDetailsModal: function (id) {
                 this.activeTimeID = id;
+                let clientTime;
+                clientTime = this.times.findById(id);
+                this.name = clientTime.name;
+                this.day = clientTime.day;
+                this.start = clientTime.start;
+                this.end = clientTime.end;
+                this.phone = clientTime.phone;
+                this.getTime();
                 this.modalHandler = new bootstrap.Modal(document.getElementById('timeDetailsModal'), {})
                 this.modalHandler.show()
             }
@@ -312,15 +361,17 @@
             }
             ,
             removeTime: function (id) {
-                this.times = this.times.filter(x => {
-                    return x.id !== id;
-                })
-            }
-            ,
-            removebookedTimes: function (id) {
-                this.bookedTimes = this.bookedTimes.filter(x => {
-                    return x.id !== id;
-                })
+                if (this.times.findById(id)) {
+                    this.times = this.times.filter(x => {
+                        return x.id !== id;
+                    })
+                } else if (this.bookedTimes) {
+                    if (this.bookedTimes.findById(id)) {
+                        this.bookedTimes = this.bookedTimes.filter(x => {
+                            return x.id !== id;
+                        })
+                    }
+                }
             }
             ,
             book: async function () {
@@ -334,9 +385,12 @@
                     if (this.bookedTimes) {
                         this.bookedTimes.push(response.body);
                         localStorage.setItem("bookedTimes", JSON.stringify(this.bookedTimes));
+                    } else {
+                        this.bookedTimes = [response.body];
+                        localStorage.setItem("bookedTimes", JSON.stringify(this.bookedTimes));
                     }
 
-                    this.sortbookedTimes()
+                    this.sortBookedTimes()
                     alert("The booking was a success!");
                 }
 
@@ -345,7 +399,7 @@
             getTime: async function () {
                 let response = await this.send('GET', `https://localhost:8080/time/${this.activeTimeID}`);
                 if (response.body) {
-                    this.name = response.body.name;
+                    this.name = response.body.bookedBy;
                     this.day = response.body.day;
                     this.start = response.body.start;
                     this.end = response.body.end;
@@ -408,9 +462,15 @@
                 if (response.ok) {
                     this.modalHandler.hide();
                     this.removeTime(this.activeTimeID);
-                    this.removebookedTimes(this.activeTimeID);
-                    this.times.push(response.body);
-                    this.sortTimes()
+                    if (response.body.userId) {
+                        this.bookedTimes.push(response.body);
+                        localStorage.setItem("bookedTimes", JSON.stringify(this.bookedTimes));
+                        this.sortBookedTimes()
+                    } else {
+                        this.times.push(response.body);
+                        localStorage.setItem("times", JSON.stringify(this.times));
+                        this.sortTimes()
+                    }
                     alert("The item change was a success!");
                 }
             }
@@ -428,7 +488,9 @@
                 this.activeTimeID = id;
                 let response = await this.send('PATCH', `https://localhost:8080/times/${this.activeTimeID}`, {});
                 if (response.ok) {
-                    this.removebookedTimes(id)
+                    this.removeTime(id)
+                    this.times.push(response.body);
+                    this.sortTimes()
                     alert("The booked time cancellation was a success!");
                 }
             }
@@ -447,8 +509,18 @@
                 }
             }
             ,
+            getLogs: async function () {
+                let response = await this.send('GET', "https://localhost:8080/logs")
+                if (response.ok) {
+                    this.logs = response.body;
+                    this.modalHandler = new bootstrap.Modal(document.getElementById('logsModal'), {})
+                    this.modalHandler.show()
+                }
+            }
+            ,
             send: function (method, url, body) {
                 const vue = this;
+
                 async function CheckError(response) {
                     if (response.status >= 200 && response.status <= 299) {
                         let responseText = await response.text()

@@ -432,6 +432,42 @@
                 "summary": "Display the frontend",
                 "description": "Displays the frontend\n"
             }
+        },
+        "/logs": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/log"
+                                    }
+                                }
+                            }
+                        },
+                        "description": "Logs"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error401"
+                                }
+                            }
+                        },
+                        "description": "You have to login"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "summary": "Get logs.",
+                "description": "Gets a list of all logs"
+            }
         }
     },
     "components": {
@@ -513,6 +549,51 @@
                 },
                 "example": {
                     "error": "string"
+                }
+            },
+            "error401": {
+                "title": "Root Type for error",
+                "description": "",
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "description": "You have to login",
+                        "type": "string",
+                        "example": "{\r\n  \"error\": \"You have to login\"\r\n}"
+                    }
+                },
+                "example": {
+                    "error": "You have to login"
+                }
+            },
+            "log": {
+                "title": "Root Type for log",
+                "description": "",
+                "type": "object",
+                "properties": {
+                    "timeStamp": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "userIp": {
+                        "type": "string"
+                    },
+                    "userId": {
+                        "type": "string"
+                    },
+                    "eventName": {
+                        "type": "string"
+                    },
+                    "extraData": {
+                        "type": "string"
+                    }
+                },
+                "example": {
+                    "timeStamp": "2022-11-29 10:16:07",
+                    "userIp": "::1",
+                    "userId": "1",
+                    "eventName": "oAuth2Login",
+                    "extraData": "Arnold Grosberg (arnold.grosberg@voco.ee) logged in with Google OAuth2 as user Admin "
                 }
             }
         },
