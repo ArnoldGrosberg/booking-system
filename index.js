@@ -115,9 +115,7 @@ app.post('/oAuth2Login', async (req, res) => {
         if (dataFromGoogleJwt) {
         let user = users.findBy('sub', dataFromGoogleJwt.sub);
         if (!user) {
-            user = createUser({
-                username: dataFromGoogleJwt.name, email: dataFromGoogleJwt.email, sub: dataFromGoogleJwt.sub
-            })
+            user = createUser(dataFromGoogleJwt.email, null, dataFromGoogleJwt.sub)
         }
         login(user, req);
         log("oAuth2Login", `${dataFromGoogleJwt.name} (${dataFromGoogleJwt.email}) logged in with Google OAuth2 as user ${user.email}`);
@@ -149,9 +147,14 @@ const users = [{id: 1, email: "Admin", password: "Password", isAdmin: true, sub:
 
 let sessions = [{id: 1, userId: 1}]
 
-function createUser(user) {
-    user.id = users.length + 1;
-    user.isAdmin = false;
+function createUser(email, password, sub) {
+    let user = {
+            id: users.length + 1,
+            email: email,
+            password: password,
+            isAdmin: false,
+            sub: sub
+        };
     users.push(user)
     return user;
 }
@@ -493,9 +496,9 @@ app.post('/users', (req, res) => {
         return res.status(409).send({error: 'Conflict: The user already exists. '})
     }
 
-    user = createUser({
-        email: req.body.email, password: req.body.password
-    });
+    user = createUser(
+            req.body.email, req.body.password, null
+    );
     login(user, req)
     log("registration", `User: ${loggedInUser.email} created and logged in`);
     res.status(201).send({sessionId: loggedInUser.sessionId})
