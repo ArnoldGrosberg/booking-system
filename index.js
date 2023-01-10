@@ -13,9 +13,9 @@ let loggedInUser;
 
 // Store user data
 app.use(function (req, res, next) {
-    let sessionId = getSessionId(req)
+    let sessionId = parseInt(getSessionId(req))
     if (sessionId) {
-        const sessionUser = sessions.find((session) => session.id === parseInt(sessionId));
+        const sessionUser = sessions.find((session) => session.id === sessionId);
         if (sessionUser) {
             loggedInUser = users.findById(sessionUser.userId);
             loggedInUser.sessionId = sessionUser.id;
@@ -90,6 +90,7 @@ app.get('/logs', async (req, res) => {
         const fields = line.match(/(\\.|[^　])+/g)
 
         // Iterate over result
+        if (fields){
         for (let i = 0; i < fields.length; i++) {
 
             // Remove backslash from escaped '　'
@@ -100,7 +101,7 @@ app.get('/logs', async (req, res) => {
         lines.push({
             timeStamp: fields[0], userIp: fields[1], userId: fields[2], eventName: fields[3], extraData: fields[4]
         });
-    }
+    }}
 
     // Return the lines array
     return res.send(lines);
@@ -109,6 +110,7 @@ app.get('/logs', async (req, res) => {
 app.post('/oAuth2Login', async (req, res) => {
     try {
         const dataFromGoogleJwt = await getDataFromGoogleJwt(req.body.credential)
+        if (dataFromGoogleJwt) {
         let user = users.findBy('sub', dataFromGoogleJwt.sub);
         if (!user) {
             user = createUser({
@@ -121,6 +123,7 @@ app.post('/oAuth2Login', async (req, res) => {
         res.status(201).send({
             sessionId: loggedInUser.sessionId, isAdmin: user.isAdmin, bookedTimes: JSON.stringify(clientBookedTimes)
         })
+        }
     } catch (err) {
         return res.status(400).send({error: 'Login unsuccessful'});
     }
@@ -175,10 +178,8 @@ function getSessionId(req) {
     if (!authorization) return null;
     const parts = authorization.split(' ');
     if (parts.length !== 2) return null;
-    const scheme = parts[0];
-    const credentials = parts[1];
-    if (/^Bearer$/i.test(scheme)) {
-        return credentials;
+    if (/^Bearer$/i.test(parts[0])) {
+            return parts[1];
     }
     return null;
 }
@@ -212,7 +213,7 @@ function requireLogin(req, res, next) {
         return res.status(401).send({error: 'You have to login'})
     }
 
-    const sessionUser = sessions.find((session) => session.id === parseInt(loggedInUser.sessionId));
+    const sessionUser = sessions.find((session) => session.id === loggedInUser.sessionId);
     if (!sessionUser) return res.status(401).json({error: 'Invalid token'});
 
     // Check that the sessionId in the sessions has user in it
@@ -226,16 +227,16 @@ function requireLogin(req, res, next) {
     next()
 }
 
-function getTime(req) {
-    return times.findById(req.params.id);
+function getTime(id) {
+    return times.findById(id);
 }
 
 function getBookedTimes() {
     return times.filter((time) => time.userId === loggedInUser.id);
 }
 
-Array.prototype.findById = function (value) {
-    return this.findBy('id', parseInt(value))
+Array.prototype.findById = function (id) {
+    return this.findBy('id', id)
 }
 Array.prototype.findBy = function (field, value) {
     return this.find(function (x) {
@@ -253,11 +254,11 @@ app.use(express.static(__dirname + '/public'));
 app.patch('/times/:id', requireLogin, (req, res) => {
 
     // Check that :id is a valid number
-    if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
+    if ((Number.isInteger(req.params.id) && parseInt(req.params.id) > 0)) {
         return res.status(400).send({error: 'Invalid id'})
     }
 
-    let time = getTime(req);
+    let time = getTime(req.params.id);
 
     // Check that time with given id exists
     if (!time) {
@@ -434,10 +435,10 @@ app.delete('/times/:id', (req, res) => {
     }
 
     // Check that :id is a valid number
-    if ((Number.isInteger(req.params.id) && req.params.id > 0)) {
+    if ((Number.isInteger(req.params.id) && parseInt(req.params.id) > 0)) {
         return res.status(400).send({error: 'Invalid id'})
     }
-    let time = times.findById(req.params.id)
+    let time = times.findById(parseInt(req.params.id))
 
     // Check that time with given id exists
     if (!time) {
@@ -466,7 +467,7 @@ app.get('/times/available', async (req, res) => {
 })
 
 app.get('/time/:id', (req, res) => {
-    let time = getTime(req);
+    let time = getTime(req.params.id);
     if (!time) {
         return res.status(404).send({error: "Time not found"})
     }
