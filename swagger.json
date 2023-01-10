@@ -373,6 +373,16 @@
             "summary": "Path used to create a single user.",
             "description": "The REST endpoint/path used to create zero or more `user` entities.  This path contains a `POST` operation to perform the creation task, respectively.",
             "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/sessionRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
                 "tags": [
                     "/users"
                 ],
@@ -508,7 +518,7 @@
                 "description": "",
                 "type": "object",
                 "properties": {
-                    "username": {
+                    "email": {
                         "type": "string"
                     },
                     "password": {
@@ -516,7 +526,7 @@
                     }
                 },
                 "example": {
-                    "username": "Admin",
+                    "email": "Admin",
                     "password": "Password"
                 }
             },
