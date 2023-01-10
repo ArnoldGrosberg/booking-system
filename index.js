@@ -1,14 +1,16 @@
 const https = require('https');
 const fs = require('fs');
-const express = require('express')
 const cors = require('cors')
-const app = express()
-const port = 8080
 const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json');
 const {OAuth2Client} = require('google-auth-library');
-const googleOAuth2Client = new OAuth2Client('230415817594-crmji8nc98jh4v2fg86d4eq1cokp5rv3.apps.googleusercontent.com');
 const readline = require("readline");
+const port = 8080;
+const googleOAuth2Client = new OAuth2Client('230415817594-crmji8nc98jh4v2fg86d4eq1cokp5rv3.apps.googleusercontent.com');
+const swaggerDocument = require('./swagger.json');
+const express = require('express');
+
+let app = express();
+
 let loggedInUser;
 
 // Store user data
@@ -130,9 +132,6 @@ app.post('/oAuth2Login', async (req, res) => {
 });
 
 app.ws('/', function (ws) {
-    ws.on('message', function (msg) {
-        expressWs.getWss().clients.forEach(client => client.send(msg));
-    });
 });
 
 let times = [{
