@@ -248,16 +248,7 @@ app.get('/times', (req, res) => {
     res.send(times)
 })
 
-app.get('/', (req, res) => {
-    fs.readFile('./index.html', function (err, html) {
-        if (err) {
-            throw err;
-        }
-        res.setHeader('content-type', 'text/html');
-        res.send(html)
-    });
-
-})
+app.use(express.static(__dirname + '/public'));
 
 app.patch('/times/:id', requireLogin, (req, res) => {
 
