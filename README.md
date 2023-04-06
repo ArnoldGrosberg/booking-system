@@ -10,12 +10,12 @@ To configure an SSL certificate, you can either use a public, trusted certificat
 If you’re running the application in a production environment, always be sure to acquire and install a trusted certificate, not a self-signed certificate!
 
 ### Creating self-signed certificate (for testing)
-1. First, generate a key file used for self-signed certificate generation with the command below. The command will create a private key as a file called key.pem.
+1. First, generate a key file to use for self-signed certificate generation with the command below. The command will create a private key as a file called key.pem.
 ```
 openssl genrsa -out key.pem
 ```
 
-2. Next, generate a certificate service request (CSR) with the command below. You’ll need a CSR to provide all of the input necessary to create the actual certificate.
+2. Next, generate a certificate signing request (CSR) with the command below. You’ll need a CSR to provide all of the input necessary to create the actual certificate.
 ```
 openssl req -new -key key.pem -out csr.pem
 ```
@@ -38,4 +38,4 @@ node ./index.js
 ```
 
 ## Running the app
-To Visit App, just open the index.html in your app folder.
+To visit the App, just open the index.html in your app folder.
