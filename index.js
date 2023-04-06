@@ -149,7 +149,9 @@ let sessions = [{id: 1, userId: 1}]
 
 function createUser(email, password, sub) {
     let user = {
-            id: users.length + 1,
+            id: (users.reduce((max, object) => {
+                return object.id > max ? object.id : max;
+            }, 0)) + 1,
             email: email,
             password: password,
             isAdmin: false,
