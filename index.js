@@ -63,7 +63,7 @@ let httpsServer = https
         }, app)
 
     .listen(port, () => {
-        console.log("Server is running at port " + port);
+        console.log("Server is running at https://localhost:" + port);
     });
 const expressWs = require('express-ws')(app, httpsServer);
 app.use(cors())        // Avoid CORS errors in browsers
