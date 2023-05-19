@@ -240,7 +240,7 @@ function getBookedTimes() {
 }
 
 Array.prototype.findById = function (id) {
-    return this.findBy('id', id)
+    return this.findBy('id', parseInt(id))
 }
 Array.prototype.findBy = function (field, value) {
     return this.find(function (x) {
