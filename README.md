@@ -39,3 +39,16 @@ node ./index.js
 
 ## Running the app
 To visit the App, just open the index.html in your app folder.
+
+## Running tests for the app
+To run tests for this project, you will need to use Selenium for automated testing. Follow the steps below to run the tests:
+
+1. Make sure you have Python installed on your system.
+
+2. Install the necessary Python packages:
+```
+pip install selenium webdriver_manager
+```
+3. To run the tests, execute the tests.py file using Python. For example:
+```python tests.py```
+This will execute the Selenium tests and provide you with the test results. Make sure your application is running while running the tests to ensure proper functionality testing.
