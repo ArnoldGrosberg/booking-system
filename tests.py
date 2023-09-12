@@ -112,4 +112,10 @@ alert.accept()
 time.sleep(0.2)
 assert "2023-12-09" not in driver.page_source, "The text '2023-12-09' should not be present on the page."
 
+logout_button = driver.find_element("xpath",'//*[@id="app"]/div[1]/button[2]')
+logout_button.click()
+time.sleep(0.2)
+login_button = driver.find_element("xpath",'//*[@id="app"]/div[1]/button').text
+assert login_button == "Login"
+
 driver.quit()
